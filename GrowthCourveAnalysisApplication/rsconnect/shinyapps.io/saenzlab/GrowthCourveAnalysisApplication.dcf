@@ -1,0 +1,12 @@
+name: GrowthCourveAnalysisApplication
+title: GrowthCourveAnalysisApplication
+username:
+account: saenzlab
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 382389
+bundleId: 1483929
+url: https://saenzlab.shinyapps.io/GrowthCourveAnalysisApplication/
+when: 1531818747.40619
+asMultiple: FALSE
+asStatic: FALSE
