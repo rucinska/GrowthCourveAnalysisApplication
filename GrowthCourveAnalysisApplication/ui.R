@@ -196,7 +196,7 @@ shinyUI(
                                        condition = "input.tabs_id != 'gr'",  checkboxInput("log", "Log y axes", value = FALSE)),
                                      checkboxInput("well", "Delete particular well", value = FALSE),
                                      conditionalPanel(
-                                       condition = "input.well == 'TRUE'",  selectInput("wells", "Select wells to display.",c(), multiple = TRUE)),
+                                       condition = "input.well == true",  selectInput("wells", "Select wells to display.",c(), multiple = TRUE)),
                                      
                                      checkboxInput("norm", "Normalise data to zero", value = FALSE),
                                      textInput('title', 'Plot Title'),

@@ -163,21 +163,7 @@ shinyServer(function(input, output, session) {
   
   observeEvent(input$update, shinyjs::disable("removewater"))
   
-  ## Download the data 
-  output$downloadData <- downloadHandler(
-    filename = "data.csv",
-    content = function(file) {
-      write.csv(reval_df(), file)
-    },
-    contentType = "text/csv"
-  )
-  
-  #render the dataframe 
-  output$contents1 <- DT::renderDataTable({
-    input$update
-    datatable(reval_df(), options =  list( scrollX = T))
-    
-  } )
+ 
   
   #http://www.cyclismo.org/tutorial/R/linearLeastSquares.html
   #https://stackoverflow.com/questions/33748649/subset-dataframe-based-on-zoom-interaction
@@ -187,10 +173,15 @@ shinyServer(function(input, output, session) {
     updateSelectInput(session, "replicates", choices=unique(reval_df()$Layout), selected = unique(reval_df()$Layout))
     
   })
+  
+  
   observeEvent(input$update, {
-    updateSelectInput(session, "samples", choices=unique(colnames(reval_df())), selected = unique(colnames(reval_df())))
-    
+    samples_list <- colnames(reval_df())
+    samples_list <- samples_list[4:length(samples_list)]
+    updateSelectInput(session, "samples", choices=samples_list, selected = samples_list)
+    #updateSelectInput(session, "samples", choices=unique(colnames(reval_df())), selected = unique(colnames(reval_df())))
   })
+  
   observeEvent(input$update, {
     updateSelectInput(session, "wells", choices = c("A1","A2","A3","A4","A5","A6","A7","A8","A9","A10","A11","A12",
                                                   "B1","B2","B3","B4","B5","B6","B7","B8","B9","B10","B11","B12",
@@ -216,6 +207,104 @@ shinyServer(function(input, output, session) {
     shinyjs::reset("side-panel")
   })
   
+  #data modification based on user selection
   
+  data_mod <- reactive({
+    
+    data <- reval_df() %>% gather(Sample, Value, -one_of("time", "Layout","Type"))
+    
+    data <- as.data.frame(data)
+    
+    data <- subset(data,
+                   time >= input$time[1] & time <= input$time[2])
+    print(str(data))
+    
+      if(is.null(input$samples))
+      { data
+      }else {
+        data <- data %>%  filter(Sample %in% input$samples)
+        }
+      
+      if(is.null(input$replicates))
+      { data 
+      }else {
+        data <- data %>%  filter(Layout %in% input$replicates)
+      }
+    return(as.data.frame(data))
+    print(data)
+  })
+  
+
+  
+  #render the dataframe 
+  output$contents1 <- DT::renderDataTable({
+    input$update
+    datatable(reval_df(), options =  list( scrollX = T))
+    
+  } )
+  
+  ## Download the data 
+  output$downloadData <- downloadHandler(
+    filename = "data.csv",
+    content = function(file) {
+      write.csv(reval_df(), file)
+    },
+    contentType = "text/csv"
+  )
+  
+  
+  ####PLOT the data - main GR plot#### 
+  
+  Plot <- eventReactive({ 
+    input$update
+    input$update_plot
+  },{
+    if(input$color_by == "Sample"){
+    
+      plot<-data_mod() %>% 
+        ggplot( aes(x =  time , y = Value, color = factor(Sample))) +
+        stat_summary(data = data_mod(), inherit.aes = TRUE,
+                     fun.y = 'mean', fun.ymin = function(x) 0, geom = 'point', 
+                     position=position_dodge()) +
+        stat_summary(data =  data_mod(), inherit.aes = TRUE, 
+                     fun.y = mean,
+                     fun.ymin = function(y) mean(y) - sd(y), 
+                     fun.ymax = function(y) mean(y) + sd(y),
+                     geom ="pointrange",show.legend = FALSE) +
+        ggtitle(input$title)  +labs( x = input$xlab, y = input$ylab) + ylim(input$minY,input$maxY)
+      
+      if(input$log){
+        plot <- plot  +  scale_y_continuous(trans=log2_trans())#scale_y_continuous(trans="log",breaks = trans_breaks("log", function(x) exp(x)),
+        #labels = trans_format("log", math_format(e^.x)))#
+      }
+      # if at least one facet column/row is specified, add it
+      facets <- paste(input$facet_row, '~', input$facet_col)
+      if (facets != '. ~ .') plot <- plot + facet_grid(facets)
+      
+      
+      plot
+    } else if (input$color_by == "Replicate") {
+      
+      plot<- data_mod() %>% 
+        group_by(Sample) %>% 
+        ggplot(aes(x =  time , y = Value, col = factor(Layout),shape = Sample, group=interaction(Layout, Sample))) +
+        geom_point() +
+        ggtitle(input$title) +labs( x = input$xlab, y = input$ylab) + ylim(input$minY,input$maxY)
+      
+      if(input$log){
+        plot <- plot +  scale_y_continuous(trans=log2_trans())
+      }  
+      # if at least one facet column/row is specified, add it
+      facets <- paste(input$facet_row, '~', input$facet_col)
+      if (facets != '. ~ .') plot <- plot + facet_grid(facets)
+      
+      plot
+    }
+    
+    plot +
+      theme_bw() 
+})
+  
+  output$plot <- renderPlot({Plot() })
   
 })
