@@ -255,7 +255,7 @@ shinyServer(function(input, output, session) {
   
   ####PLOT the data - main GR plot#### 
   
-  Plot <- eventReactive({ 
+  main_Plot <- eventReactive({ 
     input$update
     input$update_plot
   },{
@@ -305,6 +305,163 @@ shinyServer(function(input, output, session) {
       theme_bw() 
 })
   
-  output$plot <- renderPlot({Plot() })
+  output$plot <- renderPlot({main_Plot() })
+  
+  #### CALCULATE GROWTH RATE ####
+  
+  GrowthRate_calc <- eventReactive({ 
+    input$update
+    input$update_plot
+  }, {
+    if(input$color_by == "Sample"){
+      
+      df <-data_mod() %>% 
+        select(-Layout, -Type) %>% 
+        group_by(Sample) %>%
+        mutate(id=1:n()) %>%
+        spread(Sample, Value) %>% 
+        select(-id)
+      print(df)
+      df[] <- lapply(df, abs)
+      
+      
+      n <- 1    # keeps track of the current row in the output data frame
+      num_analyses <- length(names(df)) - 1
+      mydf <- data.frame(sample = character(num_analyses),
+                         k = numeric(num_analyses),
+                         n0  = numeric(num_analyses),
+                         r = numeric(num_analyses),
+                         t_mid = numeric(num_analyses),
+                         t_gen = numeric(num_analyses),
+                         auc_l = numeric(num_analyses),
+                         auc_e = numeric(num_analyses),
+                         sigma = numeric(num_analyses),
+                         stringsAsFactors = FALSE)
+      
+      
+      
+      for (col_name in names(df)) {
+        
+        if (col_name != "time") {
+          
+          #This function finds the parameters that describe the input data’s growth. It does so by fitting the
+          #logistic curve to your growth curve measurements.
+          
+          
+          # Create a temporary data frame that contains just the time and current col
+          d_loop <- df[, c("time", col_name)]
+          #print(d_loop)
+          #print(str(d_loop))
+          gc_fit <- SummarizeGrowth(data_t = d_loop[, "time"],
+                                    data_n = d_loop[, col_name],
+                                    bg_correct = "none")
+          mydf$sample[n] <- col_name
+          mydf[n, 2:9] <- c(gc_fit$vals$k,
+                            gc_fit$vals$n0,
+                            gc_fit$vals$r,
+                            gc_fit$vals$t_mid,
+                            gc_fit$vals$t_gen,
+                            gc_fit$vals$auc_l,
+                            gc_fit$vals$auc_e,
+                            gc_fit$vals$sigma)
+          n <- n + 1
+        }
+      }
+      mydf
+      #https://stackoverflow.com/questions/1169539/linear-regression-and-group-by-in-r
+
+      return(mydf)
+    } else if (input$color_by == "Replicate") {
+      
+
+      df_rep <- data_mod() %>% select(-Type)
+
+      d<- df_rep %>% 
+        #gather(variable, value, -one_of("time","Layout")) %>% 
+        unite(temp, Sample, Layout) %>% 
+        group_by(temp) %>% 
+        #mutate(id=1:n()) %>% 
+        spread(temp, Value)
+      print(d)
+      d[] <- lapply(d, abs)
+      
+      num_analyses <- length(names(d)) - 1
+      d_gc <- data.frame(sample = character(num_analyses),
+                         k = numeric(num_analyses),
+                         n0  = numeric(num_analyses),
+                         r = numeric(num_analyses),
+                         t_mid = numeric(num_analyses),
+                         t_gen = numeric(num_analyses),
+                         auc_l = numeric(num_analyses),
+                         auc_e = numeric(num_analyses),
+                         sigma = numeric(num_analyses),
+                         stringsAsFactors = FALSE)
+      
+      rep_count <- length(unique(df_rep$Layout))
+      col_count <- ncol(df_rep)-2
+      par(mfcol = c(rep_count ,col_count))
+      par(mar = c(0.25,0.25,0.25,0.25))
+      y_lim_max <- max(d[,setdiff(names(d), "time")]) - min(d[,setdiff(names(d), "time")])
+      trim_at_time <- input$time[2]
+      n <- 1    # keeps track of the current row in the output data frame
+      for (col_name in names(d)) {
+        print(col_name)
+        # Don't process the column called "time". 
+        # It contains time and not absorbance data.
+        if (col_name != "time") {
+          
+          # Create a temporary data frame that contains just the time and current col
+          d_loop <- d[, c("time", col_name)]
+          
+          
+          # Now, call Growthcurver to calculate the metrics using SummarizeGrowth
+          gc_fit <- SummarizeGrowth(data_t = d_loop[, "time"], 
+                                    data_n = d_loop[, col_name],
+                                    
+                                    bg_correct = "none")
+          summary(gc_fit)
+          plot(gc_fit)
+          gc_fit$model
+          # Now, add the metrics from this column to the next row (n) in the 
+          # output data frame, and increment the row counter (n)
+          d_gc$sample[n] <- col_name
+          d_gc[n, 2:9] <- c(gc_fit$vals$k,
+                            gc_fit$vals$n0,
+                            gc_fit$vals$r,
+                            gc_fit$vals$t_mid,
+                            gc_fit$vals$t_gen,
+                            gc_fit$vals$auc_l,
+                            gc_fit$vals$auc_e,
+                            gc_fit$vals$sigma)
+          n <- n + 1
+          
+          # Finally, plot the raw data and the fitted curve
+          # Here, I'll just print some of the data points to keep the file size smaller
+          n_obs <- length(gc_fit$data$t)
+          idx_to_plot <- 1:20 / 20 * n_obs
+          plot<-plot(gc_fit$data$t[idx_to_plot], gc_fit$data$N[idx_to_plot], 
+                     pch = 20, 
+                     xlim = c(0, trim_at_time), 
+                     ylim = c(0, y_lim_max),
+                     cex = 0.6, xaxt = "n", yaxt = "n")
+          text(x = 10, y = y_lim_max, labels = col_name, pos = 1)
+          lines(gc_fit$data$t, predict(gc_fit$model), col = "red")
+        }
+      }
+      d_gc
+    }
+  })
+  
+  
+  output$summary1 <- DT::renderDataTable({
+    
+    datatable(GrowthRate_calc(),  options = list(scrollX = T))
+  })
+  
+  ##################################
+  
+  
+  
+  
   
 })

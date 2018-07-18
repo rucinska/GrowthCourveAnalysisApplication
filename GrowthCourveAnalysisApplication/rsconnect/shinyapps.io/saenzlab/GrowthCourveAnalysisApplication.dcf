@@ -5,8 +5,8 @@ account: saenzlab
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 382389
-bundleId: 1484276
+bundleId: 1486297
 url: https://saenzlab.shinyapps.io/GrowthCourveAnalysisApplication/
-when: 1531833719.24123
+when: 1531905207.49185
 asMultiple: FALSE
 asStatic: FALSE
