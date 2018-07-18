@@ -33,7 +33,15 @@ shinyUI(
                     tags$head(tags$style(HTML('.shiny-split-layout>div {overflow:visible}'))),
                     tags$style(HTML("
                                     
-                                    
+                                    .popover{
+   background-color:#b94a48;
+                                    border:none;
+                                    border-radius:unset;
+                                    min-width:100px;
+                                    width:100%;
+                                    max-width:400px;
+                                    overflow-wrap:break-word;
+                                    }
                                     .box.box-solid.box-primary>.box-header {
                                     color:#fff;
                                     background:#666666
@@ -236,9 +244,15 @@ shinyUI(
                                                             )
                                                           )
                                                         ),
-                                                        conditionalPanel(condition = "input.update_plot" , h4("Growth Curve Analysis")),
-                                                        
-                                                        DT::dataTableOutput("summary1")),
+                                                        conditionalPanel(condition = "input.update_plot" , 
+                                                                         h4("Growth Curve Analysis"),
+                                                        div(style = "white-space: nowrap;", 
+                                                            DT::dataTableOutput("summary1")),
+                                                            hr(),
+                                                            uiOutput(outputId = "n_gr"),
+                                                            hr(),
+                                                            downloadButton("downloadData_gr_cal", "Download"))),
+                                               
                                                tabPanel("Check your fit",value="expo",
                                                         plotOutput('expo_fit', height=700),
                                                         div(

@@ -321,9 +321,8 @@ shinyServer(function(input, output, session) {
         mutate(id=1:n()) %>%
         spread(Sample, Value) %>% 
         select(-id)
-      print(df)
+     
       df[] <- lapply(df, abs)
-      
       
       n <- 1    # keeps track of the current row in the output data frame
       num_analyses <- length(names(df)) - 1
@@ -338,15 +337,12 @@ shinyServer(function(input, output, session) {
                          sigma = numeric(num_analyses),
                          stringsAsFactors = FALSE)
       
-      
-      
       for (col_name in names(df)) {
         
         if (col_name != "time") {
           
           #This function finds the parameters that describe the input data’s growth. It does so by fitting the
           #logistic curve to your growth curve measurements.
-          
           
           # Create a temporary data frame that contains just the time and current col
           d_loop <- df[, c("time", col_name)]
@@ -373,7 +369,6 @@ shinyServer(function(input, output, session) {
       return(mydf)
     } else if (input$color_by == "Replicate") {
       
-
       df_rep <- data_mod() %>% select(-Type)
 
       d<- df_rep %>% 
@@ -382,7 +377,7 @@ shinyServer(function(input, output, session) {
         group_by(temp) %>% 
         #mutate(id=1:n()) %>% 
         spread(temp, Value)
-      print(d)
+     
       d[] <- lapply(d, abs)
       
       num_analyses <- length(names(d)) - 1
@@ -405,7 +400,6 @@ shinyServer(function(input, output, session) {
       trim_at_time <- input$time[2]
       n <- 1    # keeps track of the current row in the output data frame
       for (col_name in names(d)) {
-        print(col_name)
         # Don't process the column called "time". 
         # It contains time and not absorbance data.
         if (col_name != "time") {
@@ -421,7 +415,6 @@ shinyServer(function(input, output, session) {
                                     bg_correct = "none")
           summary(gc_fit)
           plot(gc_fit)
-          gc_fit$model
           # Now, add the metrics from this column to the next row (n) in the 
           # output data frame, and increment the row counter (n)
           d_gc$sample[n] <- col_name
@@ -446,20 +439,109 @@ shinyServer(function(input, output, session) {
                      cex = 0.6, xaxt = "n", yaxt = "n")
           text(x = 10, y = y_lim_max, labels = col_name, pos = 1)
           lines(gc_fit$data$t, predict(gc_fit$model), col = "red")
+          plot
         }
       }
+      plot
       d_gc
     }
   })
   
-  
-  output$summary1 <- DT::renderDataTable({
+  # Replication Growth rate fitting plot
+  GrowthRate_repPLOT <- eventReactive({ 
+    input$update
+    input$update_plot
+  }, {
+    if (input$color_by == "Replicate") {
     
-    datatable(GrowthRate_calc(),  options = list(scrollX = T))
+    df_rep <- data_mod() %>% select(-Type)
+    
+    d<- df_rep %>% 
+      #gather(variable, value, -one_of("time","Layout")) %>% 
+      unite(temp, Sample, Layout) %>% 
+      group_by(temp) %>% 
+      #mutate(id=1:n()) %>% 
+      spread(temp, Value)
+    
+    d[] <- lapply(d, abs)
+  
+    num_analyses <- length(names(d)) - 1
+
+    rep_count <- length(unique(df_rep$Layout))
+    col_count <- length(unique(df_rep$Sample))
+    
+    par(mfcol = c(rep_count ,col_count))
+    par(pin=c(0.9, 0.9), mar = c(0.25,0.25,0.25,0.25))
+    
+    
+    y_lim_max <- max(d[,setdiff(names(d), "time")]) - min(d[,setdiff(names(d), "time")])
+    trim_at_time <- max(df_rep$time)#input$time[2]
+    n <- 1    # keeps track of the current row in the output data frame
+    for (col_name in names(d)) {
+      # Don't process the column called "time". 
+      # It contains time and not absorbance data.
+      if (col_name != "time") {
+        
+        # Create a temporary data frame that contains just the time and current col
+        d_loop <- d[, c("time", col_name)]
+        
+        
+        # Now, call Growthcurver to calculate the metrics using SummarizeGrowth
+        gc_fit <- SummarizeGrowth(data_t = d_loop[, "time"], 
+                                  data_n = d_loop[, col_name],
+                                  bg_correct = "none")
+       
+        # Finally, plot the raw data and the fitted curve
+        # Here, I'll just print some of the data points to keep the file size smaller
+        n_obs <- length(gc_fit$data$t)
+        idx_to_plot <- 1:20 / 20 * n_obs
+        
+        plot(gc_fit$data$t[idx_to_plot], gc_fit$data$N[idx_to_plot], 
+                   pch = 20, 
+                   xlim = c(0, trim_at_time), 
+                   ylim = c(0, y_lim_max),
+                   cex = 0.6, xaxt = "n", yaxt = "n")
+        text(x = 10, y = y_lim_max, labels = col_name, pos = 1)
+        lines(gc_fit$data$t, predict(gc_fit$model), col = "red")
+      }
+    }
+    }
+  })
+  
+
+  
+  #print data in the table
+  output$summary1 <- DT::renderDataTable({
+    datatable(GrowthRate_calc(),  options = list(scrollX = T),callback = JS("table.on('click.dt', 'td', function() {
+                               Shiny.onInputChange('click', Math.random());
+  });"))
+  })
+  #download the data
+  output$downloadData_gr_cal <- downloadHandler(
+    filename = "growth_rate_data.csv",
+    content = function(file) {
+      write.csv(GrowthRate_calc(), file)
+    },
+    contentType = "text/csv"
+  )
+  
+  plotModal <- function() {
+    modalDialog(
+      size = "l",
+      plotOutput("ptdist")
+    )
+  }
+  observeEvent(input$click, {
+    print("Clicked!")
+    removeModal()
+    showModal(plotModal())
+  })
+  output$ptdist <- renderPlot({
+    GrowthRate_repPLOT()
   })
   
   ##################################
-  
+  ########### SAVE PLOT MAIN  ######
   
   
   
