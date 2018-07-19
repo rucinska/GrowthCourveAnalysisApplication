@@ -218,7 +218,10 @@ shinyUI(
                                      
                                      textInput('title', 'Plot Title'),
                                      textInput('xlab', 'X axis label'),
-                                     textInput('ylab', 'Y axis label', value = "OD"),
+                                     conditionalPanel(
+                                                     condition = "input.tabs_id != 'gr'",
+                                                        textInput('ylab', 'Y axis label', value = "OD")
+                                     ),
                                      #conditionalPanel(
                                        #condition = "input.tabs_id == 'gr'",
                                        numericInput(inputId = "minY", label = "Minimum y value",value =  0),
@@ -334,26 +337,26 @@ shinyUI(
                                                
                                                tabPanel("Growth Rate ZOOM",value="zoom",
                                                         fluidRow(
-                                                          column(8, plotOutput('plot2', height = 300,
+                                                          column(8, plotOutput('zoom_plot', height = 300,
                                                                                brush = brushOpts(
-                                                                                 id = "plot2_brush",
+                                                                                 id = "zoom_plot_brush",
                                                                                  resetOnNew = TRUE
                                                                                ))),
-                                                          column(width = 4,  plotOutput("plot3", height = 300),
-                                                                 # div(
-                                                                 #   id = "save_plot_area",
-                                                                 #   inline_ui(
-                                                                 #     textInput("save_plot_name_gr2", NULL, "",
-                                                                 #               placeholder = "Enter plot name to save")
-                                                                 #   ),
-                                                                 #   actionButton("save_plot_btn_gr2", "Save plot", icon = icon("star")),
-                                                                 #   shinyjs::hidden(
-                                                                 #     span(
-                                                                 #       id = "save_plot_checkmark_gr2",
-                                                                 #       icon("check")
-                                                                 #     )
-                                                                 #   )
-                                                                 # ),
+                                                          column(width = 4,  plotOutput("zoom_plot_2", height = 300),
+                                                                 div(
+                                                                   id = "save_plot_area",
+                                                                   inline_ui(
+                                                                     textInput("save_plot_name_zoom2", NULL, "",
+                                                                               placeholder = "Enter plot name to save")
+                                                                   ),
+                                                                   actionButton("save_plot_btn_zoom2", "Save plot", icon = icon("star")),
+                                                                   shinyjs::hidden(
+                                                                     span(
+                                                                       id = "save_plot_checkmark_zoom2",
+                                                                       icon("check")
+                                                                     )
+                                                                   )
+                                                                 ),
                                                                  actionButton("AddToTable","Add to table", class = "btn-primary",style='padding:4px; font-size:120%')
                                                           ),
                                                           hr(),
@@ -374,17 +377,17 @@ shinyUI(
                                                           fluidRow(
                                                             conditionalPanel(condition = "input.update_plot" , h4("Growth Rate Comparison Plot")),
                                                             
-                                                            column(width =12, plotOutput("plot4", height = 300),
+                                                            column(width =12, plotOutput("zoom_plot_GR", height = 300),
                                                                    div(
                                                                      id = "save_plot_area",
                                                                      inline_ui(
-                                                                       textInput("save_plot_name4", NULL, "",
+                                                                       textInput("save_plot_name_zoomGR", NULL, "",
                                                                                  placeholder = "Enter plot name to save")
                                                                      ),
-                                                                     actionButton("save_plot_btn4", "Save plot", icon = icon("star")),
+                                                                     actionButton("save_plot_btn_zoomGR", "Save plot", icon = icon("star")),
                                                                      shinyjs::hidden(
                                                                        span(
-                                                                         id = "save_plot_checkmark4",
+                                                                         id = "save_plot_checkmark_zoomGR",
                                                                          icon("check")
                                                                        )
                                                                      )

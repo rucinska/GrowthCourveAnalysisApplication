@@ -207,20 +207,20 @@ shinyServer(function(input, output, session) {
     shinyjs::reset("side-panel")
   })
   
-  # update select input - when Sample selected not possible to facet by Layout
-  conditionalPanel(
-    condition = "input.color_by == 'Sample'",     updateSelectInput(session, "facet_row",
-                                                                    label ='Facet Row', 
-                                                                    choices = c(None = '.',"Sample")
-                                                                    
-    ))
-  
-  conditionalPanel(
-    condition = "input.color_by == 'Sample'",     updateSelectInput(session, "facet_row",
-                                                                    label ='Facet Column', 
-                                                                    choices = c(None = '.',"Sample")
-                                                                    
-    ))
+  # # update select input - when Sample selected not possible to facet by Layout
+  # conditionalPanel(
+  #   condition = "input.color_by == 'Sample'",     updateSelectInput(session, "facet_row",
+  #                                                                   label ='Facet Row', 
+  #                                                                   choices = c(None = '.',"Sample")
+  #                                                                   
+  #   ))
+  # 
+  # conditionalPanel(
+  #   condition = "input.color_by == 'Sample'",     updateSelectInput(session, "facet_col",
+  #                                                                   label ='Facet Column', 
+  #                                                                   choices = c(None = '.',"Sample")
+  #                                                                   
+  #   ))
   
   #data modification based on user selection
   
@@ -663,7 +663,8 @@ shinyServer(function(input, output, session) {
       fit <- ggplot(df.final, aes(x=time, y=od, group = Sample, col = Sample)) + 
         geom_point(aes(), alpha=0.5) + 
         geom_line(aes(y=pred.od), color="red")  + 
-        theme_bw() #+ facet_grid(sample ~ . )
+        theme_bw() +
+        ggtitle(input$title) +labs( x = input$xlab, y = input$ylab) + ylim(input$minY,input$maxY)#+ facet_grid(sample ~ . )
       
       facets <- paste(input$facet_row, '~', input$facet_col)
       if (facets != '. ~ .') fit <- fit + facet_grid(facets)
@@ -710,7 +711,8 @@ shinyServer(function(input, output, session) {
       fit1<- ggplot(df_final, aes(x=time, y=od, group = Layout,col = factor(Layout),shape = Sample)) + 
         geom_point(aes(), alpha=0.5) + 
         geom_line(aes(y=pred.od,group=interaction(Sample,Layout)), color="red")  + 
-        theme_bw() #+ facet_grid(Layout~Sample)
+        theme_bw() +
+        ggtitle(input$title) +labs( x = input$xlab, y = input$ylab) + ylim(input$minY,input$maxY)#+ facet_grid(Layout~Sample)
       
       facets <- paste(input$facet_row, '~', input$facet_col)
       if (facets != '. ~ .') fit1 <- fit1 + facet_grid(facets)
@@ -769,23 +771,24 @@ shinyServer(function(input, output, session) {
   #####
   
   ############## Growth Rate Plot TAB #############
-  
   GR_Plot <- eventReactive({ 
     input$update
     input$update_plot
   }, {
+    
+    
     if(input$color_by == "Sample"){
       ggplot(GrowthRate_calc(), aes(x = factor(sample), y = r, col = sample)) + 
         geom_point() +
         theme_bw()+
-        ggtitle(input$title) +labs( x = input$xlab, y = input$ylab) + ylim(input$minY,input$maxY)
+        ggtitle(input$title) +labs( x = input$xlab, y = "Growth Rate") + ylim(input$minY,input$maxY)
     } else if(input$color_by == "Replicate"){
       data_plot<- GrowthRate_calc() %>% group_by(sample = sub("_[A-Z]$", "", sample)) # %>% summarise(mean_r = mean(r), sd_r = sd(r))
       ggplot(data_plot, aes(x = factor(sample), y = r, col = sample)) + 
         geom_boxplot(outlier.colour = "red", outlier.shape = 1) +
         geom_jitter(width = 0.2) + 
         theme_bw() +
-        ggtitle(input$title) +labs( x = input$xlab, y = input$ylab) + ylim(input$minY,input$maxY)
+        ggtitle(input$title) +labs( x = input$xlab, y = "Growth Rate") + ylim(input$minY,input$maxY)
     }
     
   })
@@ -861,6 +864,7 @@ shinyServer(function(input, output, session) {
                     fun.ymin = function(y) mean(y) - sd(y), 
                     fun.ymax = function(y) mean(y) + sd(y),
                     geom ="pointrange",show.legend = FALSE) +
+      theme(legend.position="none") +
       theme_bw() +
       ggtitle(input$title) +labs( x = input$xlab, y = input$ylab) + ylim(input$minY,input$maxY)
     
@@ -918,7 +922,175 @@ shinyServer(function(input, output, session) {
   
   ####################
   
+  ###### Growth Rate ZOOM #########
   
+  
+  ranges2 <- reactiveValues(x = NULL, y = NULL)
+  
+  output$zoom_plot <- renderPlot({main_Plot() + theme(legend.position="none")})
+  
+  zoom_plot_user <- eventReactive({
+    input$AddToTable
+    input$update_plot
+    
+  },{
+    main_Plot() +
+      coord_cartesian(xlim = ranges2$x, ylim = ranges2$y, expand = FALSE) + theme(legend.position="none")
+  })
+  
+  
+  output$zoom_plot_2 <- renderPlot({ zoom_plot_user() })
+  
+  
+  observe({
+    brush <- input$zoom_plot_brush
+    if (!is.null(brush)) {
+      ranges2$x <- c(brush$xmin, brush$xmax)
+      ranges2$y <- c(brush$ymin, brush$ymax)
+
+    } else {
+      ranges2$x <- NULL
+      ranges2$y <- NULL
+
+    }
+  })
+
+  dat_brush <- reactive({
+    user_brush <- input$zoom_plot_brush
+    data <- data_mod()
+    brushedPoints(data, user_brush, xvar = "time", yvar = "Value")
+  })
+
+  
+  #### SAVE zoom_plot_2() #####
+  # When the save button is clicked, add the plot to a list and clear the input
+  observeEvent(input$save_plot_btn_zoomGR, {
+    plot_name <- trimws(input$save_plot_name_zoom2)
+    
+    if (plot_name %in% names(values$plots)) {
+      showModal(
+        modalDialog(
+          "You already have a plot saved with the same name. Saving this plot will override the existing plot.",
+          footer = tagList(
+            modalButton("Cancel"),
+            actionButton("save_plot_duplicate_confirm", "OK",
+                         class = "btn-primary")
+          ),
+          size = "m"
+        )
+      )
+    } else {
+      save_plot_zoomGR()
+    }
+  })
+  
+  observeEvent(input$save_plot_duplicate_confirm, {
+    save_plot_zoom2()
+    removeModal()
+  })
+  save_plot4 <- function() {
+    shinyjs::show("save_plot_checkmark_zoom2")
+    values$plots[[trimws(input$save_plot_name_zoom2)]] <- zoom_plot_user()
+    #values$plots[[trimws(input$save_plot_name)]] <- GR_Plot()
+    updateTextInput(session, "save_plot_name_zoom2", value = "")
+    shinyjs::delay(
+      1000,
+      shinyjs::hide("save_plot_checkmark_zoom2", anim = TRUE, animType = "fade")
+    )
+  }
+  
+  # Disable the "save" button if the plot name input is empty
+  observe({
+    shinyjs::toggleState("save_plot_btn_zoom2",
+                         condition = nzchar(trimws(input$save_plot_name_zoom2)))
+    
+    
+  })
+  
+  observeEvent(input$Go, {
+    temp <- values$df_data[-input$Delete, ]
+    values$df_data <- temp
+
+  })
+
+
+
+  observeEvent(input$AddToTable, {
+  
+    temp<-  dat_brush()  %>% select(Layout, Sample, time, Value) %>%
+      group_by(Layout, Sample) %>%
+      do(model = lm(log(Value)~time, data = .))  %>% ungroup() %>% rowwise() %>% tidy(model)  %>% filter(term =="time")
+
+    values$df_data <- rbind(values$df_data, temp)
+
+  })
+
+  output$info<-DT::renderDataTable({
+    DT::datatable( values$df_data,options =  list( scrollX = T, pageLength = 6) )
+
+
+  })
+  
+  
+
+  zoom_GR <- eventReactive({
+    input$AddToTable
+  },{
+    print(values$df_data)
+    plot_4 <- values$df_data %>% ggplot(aes(Sample, estimate, col = Sample, group = Sample)) + geom_point() + geom_boxplot() + theme_bw() +ylim(0,1)
+    plot_4
+  })
+
+  output$zoom_plot_GR <- renderPlot({
+    zoom_GR()
+  })
+
+
+  #### SAVE zoom_GR() #####
+  # When the save button is clicked, add the plot to a list and clear the input
+  observeEvent(input$save_plot_btn_zoomGR, {
+    plot_name <- trimws(input$save_plot_name_zoomGR)
+
+    if (plot_name %in% names(values$plots)) {
+      showModal(
+        modalDialog(
+          "You already have a plot saved with the same name. Saving this plot will override the existing plot.",
+          footer = tagList(
+            modalButton("Cancel"),
+            actionButton("save_plot_duplicate_confirm", "OK",
+                         class = "btn-primary")
+          ),
+          size = "m"
+        )
+      )
+    } else {
+      save_plot_zoomGR()
+    }
+  })
+
+  observeEvent(input$save_plot_duplicate_confirm, {
+    save_plot_zoomGR()
+    removeModal()
+  })
+  save_plot_zoomGR <- function() {
+    shinyjs::show("save_plot_checkmark_zoomGR")
+    values$plots[[trimws(input$save_plot_name_zoomGR)]] <- zoom_GR()
+    #values$plots[[trimws(input$save_plot_name)]] <- GR_Plot()
+    updateTextInput(session, "save_plot_name_zoomGR", value = "")
+    shinyjs::delay(
+      1000,
+      shinyjs::hide("save_plot_checkmark_zoomGR", anim = TRUE, animType = "fade")
+    )
+  }
+
+  # Disable the "save" button if the plot name input is empty
+  observe({
+    shinyjs::toggleState("save_plot_btn_zoomGR",
+                         condition = nzchar(trimws(input$save_plot_name_zoomGR)))
+
+
+  })
+
   
   
   ##################
