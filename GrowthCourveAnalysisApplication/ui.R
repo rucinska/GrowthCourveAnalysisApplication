@@ -200,13 +200,22 @@ shinyUI(
                                               condition = "input.color_by == 'Replicate'",  selectInput("replicates", "Select replicates to display.",c(), multiple = TRUE)),
                                             conditionalPanel(
                                               condition = "input.color_by == 'Sample'",  selectInput("samples", "Select samples to display.",c(), multiple = TRUE))),
+                                     # conditionalPanel(
+                                     #   condition = "input.tabs_id == c('plot1','expo')",  checkboxInput("log", "Log y axes", value = FALSE)
+                                     #                    ),
                                      conditionalPanel(
-                                       condition = "input.tabs_id != 'gr'",  checkboxInput("log", "Log y axes", value = FALSE)),
-                                     checkboxInput("well", "Delete particular well", value = FALSE),
+                                       condition = ("input.tabs_id == 'expo'|| input.tabs_id == 'plot1'|| input.tabs_id == 'zoom'"), 
+                                       checkboxInput("log", "Log y axes", value = FALSE),
+                                       checkboxInput("well", "Delete particular well", value = FALSE),
+                                       checkboxInput("norm", "Normalise data to zero", value = FALSE)
+                                     ),
+                                     
+                                     
+                                     
                                      conditionalPanel(
                                        condition = "input.well == true",  selectInput("wells", "Select wells to display.",c(), multiple = TRUE)),
                                      
-                                     checkboxInput("norm", "Normalise data to zero", value = FALSE),
+                                     
                                      textInput('title', 'Plot Title'),
                                      textInput('xlab', 'X axis label'),
                                      textInput('ylab', 'Y axis label', value = "OD"),
@@ -215,12 +224,14 @@ shinyUI(
                                        numericInput(inputId = "minY", label = "Minimum y value",value =  0),
                                        numericInput(inputId = "maxY", label = "Maximum y value", value = 1),
                                      #),
+                                     conditionalPanel(
+                                       condition = ("input.tabs_id == 'expo'|| input.tabs_id == 'plot1'|| input.tabs_id == 'zoom'"),
                                      
                                      selectInput('facet_row', 'Facet Row', c(None = '.',"Sample", "Layout")),
                                      selectInput('facet_col', 'Facet Column', c(None = '.', "Sample", "Layout")),
                                      
-                                     sliderInput("time", "Time", value = c(0, 100), min = 0, max = 100),
-                                     
+                                     sliderInput("time", "Time", value = c(0, 100), min = 0, max = 100)
+                                     ),
                                      actionButton("update_plot", "Update", class = "btn-primary",style='padding:4px; font-size:120%')
                                  ),
                                  
@@ -294,6 +305,33 @@ shinyUI(
                                                         #verbatimTextOutput("info")
                                                         #DT::dataTableOutput("plot_brushed_points")
                                                ),
+                                               tabPanel("Growth Rate Max OD",value="OD",
+                                                        fluidRow(
+                                                          column(7,plotOutput('plot_OD', height=700),
+                                                                 div(
+                                                                   id = "save_plot_area",
+                                                                   inline_ui(
+                                                                     textInput("save_plot_name_OD", NULL, "",
+                                                                               placeholder = "Enter plot name to save")
+                                                                   ),
+                                                                   actionButton("save_plot_btn_OD", "Save plot", icon = icon("star")),
+                                                                   shinyjs::hidden(
+                                                                     span(
+                                                                       id = "save_plot_checkmark_OD",
+                                                                       icon("check")
+                                                                     )
+                                                                   )
+                                                                 ) ),
+                                                          column(5, DT::dataTableOutput("od_max_df"),
+                                                                 hr(),
+                                                                 downloadButton("downloadData_OD", "Download"))
+                                                        )
+                                                        
+                                                        #plotOutput('OD', height=700)
+                                                        #verbatimTextOutput("info")
+                                                        #DT::dataTableOutput("plot_brushed_points")
+                                               ),
+                                               
                                                tabPanel("Growth Rate ZOOM",value="zoom",
                                                         fluidRow(
                                                           column(8, plotOutput('plot2', height = 300,
