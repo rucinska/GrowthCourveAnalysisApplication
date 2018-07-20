@@ -153,7 +153,8 @@ shinyServer(function(input, output, session) {
     has.neg <- apply(df, 1, function(row) any(row < 0))
     
     if(has.neg == TRUE){
-      output$n <- renderUI({HTML(paste0("ACHTUNG!!!! You have negative values in your samples! Go and repeat you experiment... #SHAME"))})
+      myNames<-names(df[,4:ncol(df)])[sapply(df[,4:ncol(df)], function(x) min(x))<0]
+      output$n <- renderUI({HTML(paste0("You have negative values in your samples! Check columns: ", paste(myNames, collapse = ", ")))})
       
     }
     
@@ -482,6 +483,15 @@ shinyServer(function(input, output, session) {
     }
   })
   
+  output$sigma <- renderPlot({
+    
+      hist( GrowthRate_calc()$sigma, main = "Histogram of sigma values", xlab = "sigma")
+  })
+  
+  output$sigma_table <- renderDataTable(
+    {datatable(GrowthRate_calc() %>% top_n(5, sigma) %>% arrange(desc(sigma)), options =  list( scrollX = T))}
+  )
+  
   # Replication Growth rate fitting plot
   GrowthRate_repPLOT <- eventReactive({ 
     input$update
@@ -799,6 +809,11 @@ shinyServer(function(input, output, session) {
   
   output$plot_GR <- renderPlot({GR_Plot() })
   
+  output$GR_info <- renderPrint({
+    # With base graphics, need to tell it what the x and y variables are.
+    nearPoints(GrowthRate_calc(), input$plot_GR_click, xvar = "sample", yvar = "r")
+    # nearPoints() also works with hover and dblclick events
+  })
   
   ### save Growth Rate Plot #####
   
@@ -1070,6 +1085,7 @@ shinyServer(function(input, output, session) {
     zoom_GR()
   })
 
+  
 
   #### SAVE zoom_GR() #####
   # When the save button is clicked, add the plot to a list and clear the input

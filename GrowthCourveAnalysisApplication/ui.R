@@ -204,9 +204,9 @@ shinyUI(
                                      #   condition = "input.tabs_id == c('plot1','expo')",  checkboxInput("log", "Log y axes", value = FALSE)
                                      #                    ),
                                      conditionalPanel(
-                                       condition = ("input.tabs_id == 'expo'|| input.tabs_id == 'plot1'|| input.tabs_id == 'zoom'"), 
+                                       condition = ("input.tabs_id == 'expo'|| input.tabs_id == 'plot1'"), 
                                        checkboxInput("log", "Log y axes", value = FALSE),
-                                       checkboxInput("well", "Delete particular well", value = FALSE),
+                                       #checkboxInput("well", "Delete particular well", value = FALSE),
                                        checkboxInput("norm", "Normalise data to zero", value = FALSE)
                                      ),
                                      
@@ -228,7 +228,7 @@ shinyUI(
                                        numericInput(inputId = "maxY", label = "Maximum y value", value = 1),
                                      #),
                                      conditionalPanel(
-                                       condition = ("input.tabs_id == 'expo'|| input.tabs_id == 'plot1'|| input.tabs_id == 'zoom'"),
+                                       condition = ("input.tabs_id == 'expo'|| input.tabs_id == 'plot1'"),
                                      
                                      selectInput('facet_row', 'Facet Row', c(None = '.',"Sample", "Layout")),
                                      selectInput('facet_col', 'Facet Column', c(None = '.', "Sample", "Layout")),
@@ -289,7 +289,8 @@ shinyUI(
                                                ),
                                                
                                                tabPanel("Growth Rate Plot",value="gr",
-                                                        plotOutput('plot_GR', height=700),
+                                                        plotOutput('plot_GR', click = "plot_GR_click", height=700),
+                                                        verbatimTextOutput("GR_info"),
                                                         div(
                                                           id = "save_plot_area",
                                                           inline_ui(
@@ -304,7 +305,8 @@ shinyUI(
                                                             )
                                                           )
                                                         ),
-                                                        plotOutput('test', height=700)
+                                                        plotOutput('sigma', height=300),
+                                                        DT::dataTableOutput("sigma_table")
                                                         #verbatimTextOutput("info")
                                                         #DT::dataTableOutput("plot_brushed_points")
                                                ),
@@ -396,15 +398,29 @@ shinyUI(
                                                                    )
                                                             )
                                                           ))
-                                                        )
-                                               ),
+                                                        ),
                                                
-                                               tabPanel("Growth Rate vol2",value="gr2",
+                                               
+                                               tabPanel("About",value="about",
                                                         fluidRow(
-                                                          
-                                                          
+                                                          h5("The application was made to analyse data of growth courve of bacteria. The data are extracted in .xml format from Liquid Handler Robot. Only this file format is accepted in this application.
+                                                              You can load the data in the Upload Data tab in Data Section (on the left side). Select all .XML files by choosing teh folder and clicking CRTL + A. After data is loaded you can assign your columns names and select a column to substract a blank. Click update to see the changes.
+                                                              If you have negative values you will be informed at the bottom of the table on the right side. For the future analysis absolute value will be taken!!
+                                                              To calculate Growth Rate I used the package - Growthcurver (https://cran.r-project.org/web/packages/growthcurver/vignettes/Growthcurver-vignette.html). 
+                                                              Growth Curve Analysis table:
+                                                                  - sample - it is a combination of sample name and layout, when colored by Replicate: name_layout
+                                                                  - k -
+                                                                  - n0 - 
+                                                                  - r - Growth Rate
+                                                                  - t_mid - 
+                                                                  - t_gen - 
+                                                                  - auc_l - 
+                                                                  - auc_e - 
+                                                                  - sigma - 
+                                                             ")
+                                                         
                                                         )
-                                                       
+                                               )      
                                    ))) #end box
                                  
                                )
