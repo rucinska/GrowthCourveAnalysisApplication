@@ -931,7 +931,9 @@ shinyServer(function(input, output, session) {
   
   ranges2 <- reactiveValues(x = NULL, y = NULL)
   
-  output$zoom_plot <- renderPlot({main_Plot() + theme(legend.position="none")})
+  output$zoom_plot <- renderPlot({main_Plot() + theme(legend.position="none")+
+      ggtitle("") +
+      labs( x = "time", y = "OD")})
   
   zoom_plot_user <- reactive({
     main_Plot() +
@@ -942,6 +944,11 @@ shinyServer(function(input, output, session) {
   
   output$zoom_plot_2 <- renderPlot({ zoom_plot_user() })
   
+  output$zoom_info <- renderPrint({
+    # With base graphics, need to tell it what the x and y variables are.
+    nearPoints(data_mod(), input$plot_click, xvar = "time", yvar = "Value")
+    # nearPoints() also works with hover and dblclick events
+  })
   
   observe({
     brush <- input$zoom_plot_brush
@@ -1016,13 +1023,17 @@ shinyServer(function(input, output, session) {
 
 
   observeEvent(input$AddToTable, {
-  
+    values$df_data <- NULL
+    if(input$color_by == "Sample"){
+      temp<-  dat_brush()  %>% select( Sample, time, Value) %>%
+        group_by(Sample) %>%
+        do(model = lm(log(Value)~time, data = .))  %>% ungroup() %>% rowwise() %>% tidy(model)  %>% filter(term =="time")
+    } else if(input$color_by == "Replicate"){
     temp<-  dat_brush()  %>% select(Layout, Sample, time, Value) %>%
       group_by(Layout, Sample) %>%
       do(model = lm(log(Value)~time, data = .))  %>% ungroup() %>% rowwise() %>% tidy(model)  %>% filter(term =="time")
-
-    values$df_data <- rbind(values$df_data, temp)
-
+      }
+    values$df_data <- rbind(values$df_data, temp) %>% select(-term)
   })
 
   output$info<-DT::renderDataTable({
@@ -1031,17 +1042,26 @@ shinyServer(function(input, output, session) {
 
   })
   
-  
+  ##### download the data GR_cal
+  output$downloadData_GR <- downloadHandler(
+    filename = "growth_rate_data.csv",
+    content = function(file) {
+      write.csv(values$df_data, file)
+    },
+    contentType = "text/csv"
+  )
 
   zoom_GR <- reactive({
-    print(values$df_data)
-    plot_4 <- values$df_data %>% ggplot(aes(Sample, estimate, col = Sample, group = Sample)) + 
+    
+   req(values$df_data)
+    plot_4 <- values$df_data %>% 
+      ggplot(aes(Sample, estimate, col = Sample, group = Sample)) + 
       geom_point() + 
       geom_boxplot() + 
       theme_bw() +
       ylim(0,1) +
       ggtitle(input$title) + 
-      labs( x = input$xlab, y = "Growth Rate")
+      labs( x = input$xlab, y = input$ylab)
       
     plot_4
   })

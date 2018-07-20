@@ -220,7 +220,7 @@ shinyUI(
                                      textInput('xlab', 'X axis label'),
                                      conditionalPanel(
                                                      condition = "input.tabs_id != 'gr'",
-                                                        textInput('ylab', 'Y axis label', value = "OD")
+                                                        textInput('ylab', 'Y axis label')
                                      ),
                                      #conditionalPanel(
                                        #condition = "input.tabs_id == 'gr'",
@@ -337,12 +337,14 @@ shinyUI(
                                                
                                                tabPanel("Growth Rate ZOOM",value="zoom",
                                                         fluidRow(
-                                                          column(8, plotOutput('zoom_plot', height = 300,
+                                                          column(7, plotOutput('zoom_plot', height = 300,
                                                                                brush = brushOpts(
                                                                                  id = "zoom_plot_brush",
                                                                                  resetOnNew = TRUE
                                                                                ))),
-                                                          column(width = 4,  plotOutput("zoom_plot_2", height = 300),
+                                                          column(width = 5,  
+                                                                 plotOutput("zoom_plot_2",click = "plot_click", height = 300),
+                                                                 verbatimTextOutput("zoom_info"),
                                                                  div(
                                                                    id = "save_plot_area",
                                                                    inline_ui(
@@ -358,7 +360,7 @@ shinyUI(
                                                                    )
                                                                  ),
                                                                  actionButton("AddToTable","Add to table", class = "btn-primary",style='padding:4px; font-size:120%')
-                                                          ),
+                                                          )),
                                                           hr(),
                                                           fluidRow(
                                                             conditionalPanel(condition = "input.update_plot" , h4("Growth Curve Analysis")),
@@ -399,84 +401,10 @@ shinyUI(
                                                
                                                tabPanel("Growth Rate vol2",value="gr2",
                                                         fluidRow(
-                                                          column(12, plotOutput('plotGR_v2', height = 300,
-                                                                                brush = brushOpts(
-                                                                                  id = "plot2_brush",
-                                                                                  resetOnNew = TRUE)),
-                                                                 div(
-                                                                   id = "save_plot_area",
-                                                                   inline_ui(
-                                                                     textInput("save_plot_name5", NULL, "",
-                                                                               placeholder = "Enter plot name to save")
-                                                                   ),
-                                                                   actionButton("save_plot_btn5", "Save plot", icon = icon("star")),
-                                                                   shinyjs::hidden(
-                                                                     span(
-                                                                       id = "save_plot_checkmark5",
-                                                                       icon("check")
-                                                                     )
-                                                                   )
-                                                                   
-                                                                 ),
-                                                                 fluidRow(
-                                                                   # column(width = 6, plotOutput("plotGR_v3", height = 300),
-                                                                   #        div(
-                                                                   #          id = "save_plot_area",
-                                                                   #          inline_ui(
-                                                                   #            textInput("save_plot_name_gr3", NULL, "",
-                                                                   #                      placeholder = "Enter plot name to save")
-                                                                   #          ),
-                                                                   #          actionButton("save_plot_btn_gr3", "Save plot", icon = icon("star")),
-                                                                   #          shinyjs::hidden(
-                                                                   #            span(
-                                                                   #              id = "save_plot_checkmark_gr3",
-                                                                   #              icon("check")
-                                                                   #            )
-                                                                   #          )
-                                                                   #        )
-                                                                   # ),
-                                                                   column(width =12, DT::dataTableOutput("tableGR_v2"))
-                                                                 )
-                                                          )
+                                                          
+                                                          
                                                         )
-                                                        # fluidRow(column(12, plotOutput('plotGR_v2', height = 300,
-                                                        #                                brush = brushOpts(
-                                                        #                                  id = "plot2_brush",
-                                                        #                                  resetOnNew = TRUE
-                                                        #                                ))),
-                                                        #          fluidRow(column(width = 6, plotOutput("plotGR_v3", height = 300),
-                                                        #                          column(width =6, DT::dataTableOutput("tableGR_v2"))
-                                                        #          ))
-                                                        # ),
-                                                        
-                                                        #verbatimTextOutput("info")
-                                                        #DT::dataTableOutput("plot_brushed_points")
-                                               )
-                                               
-                                               # plotOutput('plot', brush=brushOpts("plot_brush",resetOnNew=T)),
-                                               # div(
-                                               #   id = "save_plot_area",
-                                               #   inline_ui(
-                                               #     textInput("save_plot_name", NULL, "",
-                                               #               placeholder = "Enter plot name to save")
-                                               #   ),
-                                               #   actionButton("save_plot_btn", "Save plot", icon = icon("star")),
-                                               #   shinyjs::hidden(
-                                               #     span(
-                                               #       id = "save_plot_checkmark",
-                                               #       icon("check")
-                                               #     )
-                                               #   )
-                                               # ),
-                                               # conditionalPanel(condition = "input.update_plot" , h4("Growth Curve Analysis")),
-                                               # 
-                                               # DT::dataTableOutput("summary1"),
-                                               # #verbatimTextOutput("brush_info"),
-                                               # #wellPanel(width=9,h4("Select points to calculate Growth Rate:"),DT::dataTableOutput("plot_brushed_points")),
-                                               # 
-                                               # conditionalPanel(condition = "input.update_plot" , h4("Growth Rate Plot")),
-                                               # plotOutput('plot_GR')
-                                               # 
+                                                       
                                    ))) #end box
                                  
                                )
