@@ -233,6 +233,11 @@ shinyServer(function(input, output, session) {
     data <- subset(data,
                    time >= input$time[1] & time <= input$time[2])
     data <- data %>% mutate(Value = abs(Value))
+    print(str(data))
+    
+    data$Sample <- factor(data$Sample, levels = unique(data$Sample), ordered=FALSE)
+    
+    print(str(data))
     if(input$norm){
       # if(input$color_by == "Sample"){
       #   print(data)
@@ -302,7 +307,7 @@ shinyServer(function(input, output, session) {
                      fun.y = mean,
                      fun.ymin = function(y) mean(y) - sd(y), 
                      fun.ymax = function(y) mean(y) + sd(y),
-                     geom ="pointrange",show.legend = FALSE)
+                     geom ="pointrange",show.legend = FALSE) 
       
       if(input$log){
         plot <- plot  +  scale_y_continuous(trans=log2_trans())#scale_y_continuous(trans="log",breaks = trans_breaks("log", function(x) exp(x)),
@@ -320,7 +325,8 @@ shinyServer(function(input, output, session) {
         group_by(Sample) %>% 
         ggplot(aes(x =  time , y = Value, col = factor(Layout),shape = Sample, group=interaction(Layout, Sample))) +
         geom_point() +
-        ggtitle(input$title) +labs( x = input$xlab, y = input$ylab) + ylim(input$minY,input$maxY)
+        ggtitle(input$title) +labs( x = input$xlab, y = input$ylab) + ylim(input$minY,input$maxY)+
+        scale_shape_manual(values=1:nlevels(data_mod()$Sample))
       
       if(input$log){
         plot <- plot +  scale_y_continuous(trans=log2_trans())
@@ -444,8 +450,6 @@ shinyServer(function(input, output, session) {
                                     data_n = d_loop[, col_name],
                                     
                                     bg_correct = "none")
-          summary(gc_fit)
-          plot(gc_fit)
           # Now, add the metrics from this column to the next row (n) in the 
           # output data frame, and increment the row counter (n)
           d_gc$sample[n] <- col_name
@@ -929,13 +933,10 @@ shinyServer(function(input, output, session) {
   
   output$zoom_plot <- renderPlot({main_Plot() + theme(legend.position="none")})
   
-  zoom_plot_user <- eventReactive({
-    input$AddToTable
-    input$update_plot
-    
-  },{
+  zoom_plot_user <- reactive({
     main_Plot() +
-      coord_cartesian(xlim = ranges2$x, ylim = ranges2$y, expand = FALSE) + theme(legend.position="none")
+      coord_cartesian(xlim = ranges2$x, ylim = ranges2$y, expand = FALSE) + theme(legend.position="none")+
+      labs( x = "time", y = "OD")
   })
   
   
@@ -964,7 +965,7 @@ shinyServer(function(input, output, session) {
   
   #### SAVE zoom_plot_2() #####
   # When the save button is clicked, add the plot to a list and clear the input
-  observeEvent(input$save_plot_btn_zoomGR, {
+  observeEvent(input$save_plot_btn_zoom2, {
     plot_name <- trimws(input$save_plot_name_zoom2)
     
     if (plot_name %in% names(values$plots)) {
@@ -980,7 +981,7 @@ shinyServer(function(input, output, session) {
         )
       )
     } else {
-      save_plot_zoomGR()
+      save_plot_zoom2()
     }
   })
   
@@ -988,10 +989,9 @@ shinyServer(function(input, output, session) {
     save_plot_zoom2()
     removeModal()
   })
-  save_plot4 <- function() {
+  save_plot_zoom2 <- function() {
     shinyjs::show("save_plot_checkmark_zoom2")
     values$plots[[trimws(input$save_plot_name_zoom2)]] <- zoom_plot_user()
-    #values$plots[[trimws(input$save_plot_name)]] <- GR_Plot()
     updateTextInput(session, "save_plot_name_zoom2", value = "")
     shinyjs::delay(
       1000,
@@ -1033,11 +1033,16 @@ shinyServer(function(input, output, session) {
   
   
 
-  zoom_GR <- eventReactive({
-    input$AddToTable
-  },{
+  zoom_GR <- reactive({
     print(values$df_data)
-    plot_4 <- values$df_data %>% ggplot(aes(Sample, estimate, col = Sample, group = Sample)) + geom_point() + geom_boxplot() + theme_bw() +ylim(0,1)
+    plot_4 <- values$df_data %>% ggplot(aes(Sample, estimate, col = Sample, group = Sample)) + 
+      geom_point() + 
+      geom_boxplot() + 
+      theme_bw() +
+      ylim(0,1) +
+      ggtitle(input$title) + 
+      labs( x = input$xlab, y = "Growth Rate")
+      
     plot_4
   })
 
@@ -1075,7 +1080,6 @@ shinyServer(function(input, output, session) {
   save_plot_zoomGR <- function() {
     shinyjs::show("save_plot_checkmark_zoomGR")
     values$plots[[trimws(input$save_plot_name_zoomGR)]] <- zoom_GR()
-    #values$plots[[trimws(input$save_plot_name)]] <- GR_Plot()
     updateTextInput(session, "save_plot_name_zoomGR", value = "")
     shinyjs::delay(
       1000,

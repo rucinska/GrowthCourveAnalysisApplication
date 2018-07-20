@@ -375,7 +375,7 @@ shinyUI(
                                                           ),
                                                           hr(),
                                                           fluidRow(
-                                                            conditionalPanel(condition = "input.update_plot" , h4("Growth Rate Comparison Plot")),
+                                                            conditionalPanel(condition = "input.update_plot" , h4("Growth Rate Comparison Plot"),
                                                             
                                                             column(width =12, plotOutput("zoom_plot_GR", height = 300),
                                                                    div(
@@ -393,7 +393,7 @@ shinyUI(
                                                                      )
                                                                    )
                                                             )
-                                                          )
+                                                          ))
                                                         )
                                                ),
                                                
