@@ -370,8 +370,8 @@ shinyServer(function(input, output, session) {
                          r = numeric(num_analyses),
                          t_mid = numeric(num_analyses),
                          t_gen = numeric(num_analyses),
-                         auc_l = numeric(num_analyses),
-                         auc_e = numeric(num_analyses),
+                         #auc_l = numeric(num_analyses),
+                         #auc_e = numeric(num_analyses),
                          sigma = numeric(num_analyses),
                          stringsAsFactors = FALSE)
       
@@ -390,13 +390,13 @@ shinyServer(function(input, output, session) {
                                     data_n = d_loop[, col_name],
                                     bg_correct = "none")
           mydf$sample[n] <- col_name
-          mydf[n, 2:9] <- c(gc_fit$vals$k,
+          mydf[n, 2:7] <- c(gc_fit$vals$k,
                             gc_fit$vals$n0,
                             gc_fit$vals$r,
                             gc_fit$vals$t_mid,
                             gc_fit$vals$t_gen,
-                            gc_fit$vals$auc_l,
-                            gc_fit$vals$auc_e,
+                            #gc_fit$vals$auc_l,
+                            #gc_fit$vals$auc_e,
                             gc_fit$vals$sigma)
           n <- n + 1
         }
@@ -425,8 +425,8 @@ shinyServer(function(input, output, session) {
                          r = numeric(num_analyses),
                          t_mid = numeric(num_analyses),
                          t_gen = numeric(num_analyses),
-                         auc_l = numeric(num_analyses),
-                         auc_e = numeric(num_analyses),
+                         #auc_l = numeric(num_analyses),
+                         #auc_e = numeric(num_analyses),
                          sigma = numeric(num_analyses),
                          stringsAsFactors = FALSE)
       
@@ -454,13 +454,13 @@ shinyServer(function(input, output, session) {
           # Now, add the metrics from this column to the next row (n) in the 
           # output data frame, and increment the row counter (n)
           d_gc$sample[n] <- col_name
-          d_gc[n, 2:9] <- c(gc_fit$vals$k,
+          d_gc[n, 2:7] <- c(gc_fit$vals$k,
                             gc_fit$vals$n0,
                             gc_fit$vals$r,
                             gc_fit$vals$t_mid,
                             gc_fit$vals$t_gen,
-                            gc_fit$vals$auc_l,
-                            gc_fit$vals$auc_e,
+                            #gc_fit$vals$auc_l,
+                            #gc_fit$vals$auc_e,
                             gc_fit$vals$sigma)
           n <- n + 1
           
@@ -810,8 +810,9 @@ shinyServer(function(input, output, session) {
   output$plot_GR <- renderPlot({GR_Plot() })
   
   output$GR_info <- renderPrint({
+    data_plot<- GrowthRate_calc() %>% group_by(sample = sub("_[A-Z]$", "", sample)) # %>% summarise(mean_r = mean(r), sd_r = sd(r))
     # With base graphics, need to tell it what the x and y variables are.
-    nearPoints(GrowthRate_calc(), input$plot_GR_click, xvar = "sample", yvar = "r")
+    nearPoints(data_plot, input$plot_GR_click, xvar = "sample", yvar = "r")
     # nearPoints() also works with hover and dblclick events
   })
   

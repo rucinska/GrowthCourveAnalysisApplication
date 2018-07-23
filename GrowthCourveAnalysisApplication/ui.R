@@ -290,7 +290,8 @@ shinyUI(
                                                
                                                tabPanel("Growth Rate Plot",value="gr",
                                                         plotOutput('plot_GR', click = "plot_GR_click", height=700),
-                                                        verbatimTextOutput("GR_info"),
+                                                        conditionalPanel(
+                                                          condition = "input.color_by == 'Replicate'", verbatimTextOutput("GR_info")),
                                                         div(
                                                           id = "save_plot_area",
                                                           inline_ui(
@@ -406,18 +407,18 @@ shinyUI(
                                                           h5("The application was made to analyse data of growth courve of bacteria. The data are extracted in .xml format from Liquid Handler Robot. Only this file format is accepted in this application.
                                                               You can load the data in the Upload Data tab in Data Section (on the left side). Select all .XML files by choosing teh folder and clicking CRTL + A. After data is loaded you can assign your columns names and select a column to substract a blank. Click update to see the changes.
                                                               If you have negative values you will be informed at the bottom of the table on the right side. For the future analysis absolute value will be taken!!
-                                                              To calculate Growth Rate I used the package - Growthcurver (https://cran.r-project.org/web/packages/growthcurver/vignettes/Growthcurver-vignette.html). 
-                                                              Growth Curve Analysis table:
-                                                                  - sample - it is a combination of sample name and layout, when colored by Replicate: name_layout
-                                                                  - k -
-                                                                  - n0 - 
-                                                                  - r - Growth Rate
-                                                                  - t_mid - 
-                                                                  - t_gen - 
-                                                                  - auc_l - 
-                                                                  - auc_e - 
-                                                                  - sigma - 
-                                                             ")
+                                                              To calculate Growth Rate I used the package - Growthcurver (https://cran.r-project.org/web/packages/growthcurver/vignettes/Growthcurver-vignette.html). ") ,
+                                                              h5("Growth Curve Analysis table:"),
+                                                                h5("- sample - it is a combination of sample name and layout, when colored by Replicate: name_layout"),
+                                                                h5("- k - the maximum possible population size in a particular environment -  the carrying capacity"),
+                                                                h5( "- n0 - initial population size"),
+                                                                h5("- r - Growth Rate"),
+                                                                h5("- t_mid - time at which the population density reaches 1/2 k"),
+                                                                h5(" - t_gen - the fastest possible generation time (also called the doubling time) "),
+                                                                #h5("- auc_l - the area under the logistic curve obtained by taking the integral of the logistic equation"), 
+                                                                #h5("- auc_e - he empirical area under the curve which is obtained by summing up the area under the experimental curve from the measurements in the input data"), 
+                                                                h5("- sigma - a measure of the goodnesss of fit of the parameters of the logistic equation for the data; it is the residual sum of squares from the nonlinear regression model. Smaller sigma values indicate a better fit of the logistic curve to the data than larger values")
+                                                            
                                                          
                                                         )
                                                )      
